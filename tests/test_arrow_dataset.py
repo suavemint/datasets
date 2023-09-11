@@ -3136,6 +3136,12 @@ def test_sort_with_none(null_placement):
         assert dataset["col_1"] == ["item_1", "item_2", "item_3", "item_4", None, None]
 
 
+def test_sample():
+    dataset = Dataset.from_dict({"col_1": ["a", "b", "c", "d", "e"]})
+    sampled = dataset.sample(n=4)
+    assert len(dataset) >= len(sampled)
+
+
 def test_update_metadata_with_features(dataset_dict):
     table1 = pa.Table.from_pydict(dataset_dict)
     features1 = Features.from_arrow_schema(table1.schema)

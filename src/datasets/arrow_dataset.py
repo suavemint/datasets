@@ -3979,6 +3979,60 @@ class Dataset(DatasetInfoMixin, IndexableMixin, TensorflowDatasetMixin):
             return self._new_dataset_with_indices(indices_buffer=buf_writer.getvalue(), fingerprint=new_fingerprint)
 
     @transmit_format
+    @fingerprint_transform(inplace=False, randomized_function=True, ignore_kwargs=["load_from_cache_file", "indices_cache_file_name"])
+    def sample(
+            self,
+            n: int = 3,
+            seed: Optional[int] = None,
+            generator: Optional[np.random.Generator] = None,
+            keep_in_memory: bool = False,
+            load_from_cache_file: Optional[bool] = None,
+            indices_cache_file_name: Optional[str] = None,
+            writer_batch_size: Optional[int] = 1000,
+            new_fingerprint: Optional[str] = None,
+    ) -> "Dataset":
+        """Create a new dataset with N randomly-sampled rows.
+
+        Args:
+            n (`int`):
+                Number of rows to sample.
+            seed (`int`, *optional*):
+                A seed to initialize the default BitGenerator if `generator=None`.
+                If `None`, then fresh, unpredictable entropy will be pulled from the OS.
+                If an `int` or `array_like[ints]` is passed, then it will be passed to SeedSequence to derive the initial BitGenerator state.
+            generator (`numpy.random.Generator`, *optional*):
+                Numpy random Generator to use to compute the permutation of the dataset rows.
+                If `generator=None` (default), uses `np.random.default_rng` (the default BitGenerator (PCG64) of NumPy).
+            keep_in_memory (`bool`, defaults to `False`):
+                Keep the sorted indices in memory instead of writing it to a cache file.
+            load_from_cache_file (`Optional[bool]`, defaults to `True` if caching is enabled):
+                If a cache file storing the sorted indices
+                can be identified, use it instead of recomputing.
+            indices_cache_file_name (`str`, *optional*, defaults to `None`):
+                Provide the name of a path for the cache file. It is used to store the
+                sorted indices instead of the automatically generated cache file name.
+            writer_batch_size (`int`, defaults to `1000`):
+                Number of rows per write operation for the cache file writer.
+                Higher value gives smaller cache files, lower value consume less temporary memory.
+            new_fingerprint (`str`, *optional*, defaults to `None`):
+                The new fingerprint of the dataset after transform.
+                If `None`, the new fingerprint is computed using a hash of the previous fingerprint, and the transform arguments
+
+        Example:
+
+        ```py
+        >>> from datasets import load_dataset
+        >>> ds = load_dataset("rotten_tomatoes", split="validation")
+        >>> ds.sample(n=5)
+        Dataset({
+            features: ['text', 'label'],
+            num_rows: 5
+        })
+        ```
+        """
+        return self.shuffle(seed=seed).select(range(n))
+
+    @transmit_format
     @fingerprint_transform(inplace=False, ignore_kwargs=["load_from_cache_file", "indices_cache_file_name"])
     def sort(
         self,
